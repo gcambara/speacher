@@ -5,9 +5,12 @@ def parse_arguments():
     parser.add_argument('--manifest', default='', help='path to the train dataset manifest tsv file')
     parser.add_argument('--out_dir', default='./', help='path to the output directory for new manifests')
     # Scoring arguments
-    parser.add_argument('--scoring_function', default='n_frames', help='scoring function: n_frames')
+    parser.add_argument('--scoring_function', default='n_frames', help='scoring function: n_frames | asr')
     parser.add_argument('--save_sorted_manifest', dest='save_sorted_manifest', action='store_true', help='save manifest sorted by the defined scoring function')
     parser.set_defaults(save_sorted_manifest=False)
+    parser.add_argument('--asr_model_zoo', default='./models', help='path to directory containing downloaded pre-trained models')
+    parser.add_argument('--asr_model', default='', help='path to the ASR model checkpoint to be used')
+    parser.add_argument('--asr_download_model', default='', help='name of the pretrained ASR model to be downloaded: s2t_transformer_s')
     # Pacing arguments
     parser.add_argument('--pacing_function', default='fixed_exponential', help='pacing function: fixed_exponential')
     parser.add_argument('--step_length', type=int, default=3000, help='number of iterations at each step')
