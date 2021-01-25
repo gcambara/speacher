@@ -19,8 +19,9 @@ def main():
     df = scoring_function(df)
 
     # Create the directory for output manifest storage.
-    if not os.path.isdir(args.out_dir):
-        os.mkdir(args.out_dir)
+    os.makedirs(args.out_dir, exist_ok=True)
+    # if not os.path.isdir(args.out_dir):
+    #     os.mkdir(args.out_dir)
 
     if args.save_sorted_manifest:
         df.to_csv(os.path.join(args.out_dir, 'sorted_manifest.tsv'), sep='\t', index=None)
