@@ -13,7 +13,7 @@ def parse_arguments():
     parser.add_argument('--asr_download_model', default='', help='name of the pretrained ASR model to be downloaded: s2t_transformer_s')
     # Pacing arguments
     parser.add_argument('--pacing_function', default='fixed_exponential', help='pacing function: fixed_exponential')
-    parser.add_argument('--step_length', type=int, default=3000, help='number of iterations at each step')
+    parser.add_argument('--step_length', type=int, default=1000, help='number of iterations at each step')
     parser.add_argument('--increase', type=float, default=1.9, help='exponential factor to increase the number of samples at each step')
     parser.add_argument('--starting_percent', type=float, default=0.3, help='percentage of the total training data to start with at first step')
     # Training arguments

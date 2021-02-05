@@ -48,7 +48,10 @@ def train_fairseq(args, df_paths_list):
             step_yaml['train-subset'] = step_yamls[index - 1]['train-subset'] + ',' + os.path.basename(args.out_dir) + '/' + os.path.splitext(os.path.basename(df_path))[0]
         else:
             step_yaml['train-subset'] = os.path.basename(args.out_dir) + '/' + os.path.splitext(os.path.basename(df_path))[0]
-        step_yaml['max-update'] = (index + 1) * args.step_length
+        
+        if index != len(df_paths_list) - 1:
+            step_yaml['max-update'] = (index + 1) * args.step_length
+
         step_yamls.append(step_yaml)
 
         if args.save_curriculum_yaml:
