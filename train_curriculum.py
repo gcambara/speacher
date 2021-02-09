@@ -52,6 +52,9 @@ def train_fairseq(args, df_paths_list):
         if index != len(df_paths_list) - 1:
             step_yaml['max-update'] = (index + 1) * args.step_length
 
+        step_yaml['save-dir'] = os.path.join(step_yaml['save-dir'], os.path.basename(args.out_dir))
+        step_yaml['tensorboard-logdir'] = step_yaml['save-dir']
+
         step_yamls.append(step_yaml)
 
         if args.save_curriculum_yaml:

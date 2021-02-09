@@ -2,6 +2,8 @@
 import os
 import wget
 import numpy as np
+import pandas as pd
+import collections
 from fairseq import scoring
 
 class ScoringFunction():
@@ -38,11 +40,17 @@ class NFrames(ScoringFunction):
 class ASR(ScoringFunction):
     def __init__(self, args):
         super(ASR, self).__init__()
-        self.model_path = self.get_model_path(args)
         self.use_fairseq = args.fairseq
+        self.use_flashlight = args.flashlight
+        self.flashlight_log = args.flashlight_log
         self.manifest = args.manifest
         self.transcripts_dir = os.path.join(args.out_dir, 'asr_transcripts')
         self.scorer = scoring.build_scorer('wer', None)
+        self.asr_metric = args.asr_metric
+        self.sort_manifest = args.sort_manifest
+
+        if self.use_fairseq:
+            self.model_path = self.get_model_path(args)
 
     def get_model_path(self, args):
         if args.asr_model == '':
@@ -69,9 +77,7 @@ class ASR(ScoringFunction):
         except ImportError:
             raise ImportError("Please install editdistance to use WER scorer")
 
-    def __call__(self, df):
-        assert (self.use_fairseq), "Fairseq mode must be set! There are not other frameworks implemented for ASR scoring at this moment."
-
+    def call_fairseq(self, df):
         data_dir, manifest_name = os.path.split(self.manifest)
         manifest_name = manifest_name.replace('.tsv', '')
 
@@ -104,7 +110,61 @@ class ASR(ScoringFunction):
             assert (ref == df.loc[int(sample_id), 'tgt_text']), "The reference text indicated by the sample ID in the transcripts file does not match with the one stored in the dataset!"
             df.at[int(sample_id), 'wer'] = wer
 
-        return df.sort_values(by=['wer'])
+        return df
+
+    def flashlight_log_to_tsv(self, log, df):
+        # The dataframe is sorted so it is faster to append new information.
+        df = df.sort_values(by='path')
+
+        eval_dict = {}
+        with open(log, 'r') as f:
+            for line in f.readlines():
+                if line.startswith('[sample: '):
+                    info = line.replace('[sample: ', '').strip().split(',')
+                    sample_id = info[0]
+                    wer = info[1].lstrip().rstrip().replace('WER: ', '').replace('%', '')
+                    ter = info[2].lstrip().rstrip().replace('TER: ', '').replace('%', '')
+                    path = sample_id + '.wav'
+
+                    eval_dict[path] = (wer, ter)
+
+        eval_dict = collections.OrderedDict(sorted(eval_dict.items()))
+        paths = []
+        wers = []
+        ters = []
+        for key, value in eval_dict.items():
+            paths.append(key)
+            wers.append(value[0])
+            ters.append(value[1])
+
+        if paths != df["path"].tolist():
+            print("The order of the log and the tsv does not match! Going the slow way.")
+            df["wer"] = np.nan
+            df["ter"] = np.nan
+            for key, value in eval_dict.items():
+                df.at[df.index[df['path'] == key].tolist()[0], 'wer'] = value[0]
+                df.at[df.index[df['path'] == key].tolist()[0], 'ter'] = value[1]
+        else:
+            # Since the log and the tsv are sorted, it is as easy as append the column, instead of
+            # searching for the matching sample IDs and/or paths.
+            df["wer"] = wers
+            df["ter"] = ters
+
+        # Sort back the dataframe to the original order.
+        return df.sort_index()
+
+    def __call__(self, df):
+        if self.use_fairseq:
+            df = self.call_fairseq(df)
+        elif self.use_flashlight:
+            df = self.flashlight_log_to_tsv(self.flashlight_log, df)
+        else:
+            assert "Flashlight or fairseq mode must be set! There are not other frameworks implemented for ASR scoring at this moment."
+
+        if self.sort_manifest:
+            return df.sort_values(by=[self.asr_metric])
+        else:
+            return df
 
 model_urls = {'s2t_transformer_s': 'https://dl.fbaipublicfiles.com/fairseq/s2t/librispeech_transformer_s.pt',
               's2t_transformer_m': 'https://dl.fbaipublicfiles.com/fairseq/s2t/librispeech_transformer_m.pt',

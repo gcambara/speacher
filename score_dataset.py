@@ -20,11 +20,9 @@ def main():
 
     # Create the directory for output manifest storage.
     os.makedirs(args.out_dir, exist_ok=True)
-    # if not os.path.isdir(args.out_dir):
-    #     os.mkdir(args.out_dir)
 
-    if args.save_sorted_manifest:
-        df.to_csv(os.path.join(args.out_dir, 'sorted_manifest.tsv'), sep='\t', index=None)
+    # Save the sorted manifest.
+    df.to_csv(os.path.join(args.out_dir, 'sorted_manifest.tsv'), sep='\t', index=None)
 
 if __name__ == '__main__':
     main()
