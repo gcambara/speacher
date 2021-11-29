@@ -4,7 +4,7 @@ import wget
 import numpy as np
 import pandas as pd
 import collections
-from fairseq import scoring
+import jiwer
 
 class ScoringFunction():
     """Base class for scoring functions"""
@@ -45,7 +45,6 @@ class ASR(ScoringFunction):
         self.flashlight_log = args.flashlight_log
         self.manifest = args.manifest
         self.transcripts_dir = os.path.join(args.out_dir, 'asr_transcripts')
-        self.scorer = scoring.build_scorer('wer', None)
         self.asr_metric = args.asr_metric
         self.sort_manifest = args.sort_manifest
 
@@ -70,12 +69,6 @@ class ASR(ScoringFunction):
             wget.download(url, model_dir)
 
         return os.path.abspath(model_path)
-
-    def compute_wer(self, ref, hyp):
-        try:
-            import editdistance as ed
-        except ImportError:
-            raise ImportError("Please install editdistance to use WER scorer")
 
     def call_fairseq(self, df):
         data_dir, manifest_name = os.path.split(self.manifest)
@@ -103,9 +96,8 @@ class ASR(ScoringFunction):
         # Now, compute and append the score for every utterance at the dataframe.
         df['wer'] = np.nan
         for sample_id, (ref, hyp) in eval_dict.items():
-            self.scorer.add_string(ref, hyp)
-            wer = self.scorer.result_string().split('WER: ')[1]
-            self.scorer.reset()
+            measures = jiwer.compute_measures(ref, hyp)
+            wer = measures['wer']*100.0
 
             assert (ref == df.loc[int(sample_id), 'tgt_text']), "The reference text indicated by the sample ID in the transcripts file does not match with the one stored in the dataset!"
             df.at[int(sample_id), 'wer'] = wer
