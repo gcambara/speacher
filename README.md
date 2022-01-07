@@ -5,7 +5,7 @@ This framework has been designed to work with other speech recognition framework
 
 ## Install the requirements
 
-Simply run the following command:
+Once you have installed [fairseq](https://github.com/pytorch/fairseq), simply run the following command:
 ````
 pip install -r requirements.txt
 ````
