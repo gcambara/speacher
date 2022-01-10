@@ -11,9 +11,16 @@ pip install -r requirements.txt
 ````
 
 ## Scoring a dataset
-A dataset can be scored and sorted in order of difficulty with different metrics, like by sample lengths, or an error metric like WER or TER. For evaluation of such metrics with a pretrained ASR, two frameworks can be used: fairseq and Flashlight.
+A dataset can be scored and sorted in order of difficulty with different metrics, like by sample lengths, or an error metric like WER or TER. For evaluation of such metrics with a pretrained ASR, three frameworks can be used: fairseq, HuggingFace and Flashlight.
 
-If using the --fairseq option, fairseq toolkit is selected. With it, you will need to set the path to a pretrained model, and also a data manifest TSV with the paths to every audio sample. The fairseq framework will be called to assess such samples:
+### Using HuggingFace
+If you want to use an ASR model from HuggingFace repository, specify the --huggingface argument. Also, introduce the name of the model so it can be downloaded from the model zoo:
+```
+python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_output_manifest> --sort_manifest --scoring_function asr --asr_metric wer --asr_download_model facebook/wav2vec2-base-960h --huggingface
+```
+
+### Using fairseq
+Use --fairseq option, to select fairseq toolkit. With it, you will need to set the path to a pretrained model, and also a data manifest TSV with the paths to every audio sample. The fairseq framework will be called to assess such samples:
 ```
 python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_output_manifest> --sort_manifest --scoring_function asr --asr_metric wer --asr_model <path_to_pretrained_checkpoint> --fairseq
 ```
@@ -24,6 +31,7 @@ You can also leave the --asr_model argument empty, and specify the name of a dow
 python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_output_manifest> --sort_manifest --scoring_function asr --asr_metric wer --asr_download_model s2t_transformer_s --fairseq
 ```
 
+### Using Flashlight
 On the other hand, calling Flashlight for usage is not currently supported. However, you can still pass in a log from a Flashlight testing execution, along with the data manifest TSV, and speacher will return the TSV sorted by the WER/TER in the Flashlight log. Simply type the following command:
 ```
 python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_output_manifest> --scoring_function asr --asr_metric wer --flashlight --flashlight_log <path_to_test_log> --sort_manifest
