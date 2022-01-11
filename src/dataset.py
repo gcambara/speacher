@@ -50,11 +50,14 @@ class AudioDataset(Dataset):
         indexes = []
         waveforms = []
         labels = []
+        wav_lens = []
         for (index, waveform, _, _, utterance) in samples:
+            wav_lens.append(waveform.size(-1))
             indexes.append(index)
             waveforms.append(waveform.squeeze())
             labels.append(utterance)
 
         waveforms = nn.utils.rnn.pad_sequence(waveforms, batch_first=True).unsqueeze(1)
+        wav_lens = torch.FloatTensor(wav_lens) / max(wav_lens)
 
-        return indexes, waveforms, labels
+        return indexes, waveforms, labels, wav_lens

@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 import jiwer
 from .dataset import AudioDataset
+from speechbrain.pretrained import EncoderDecoderASR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import Wav2Vec2ForCTC, Wav2Vec2CTCTokenizer
@@ -57,6 +58,8 @@ class ASR(ScoringFunction):
         self.asr_metric = args.asr_metric
         self.sort_manifest = args.sort_manifest
 
+        self.sampling_rate = args.sampling_rate
+
         if self.use_fairseq:
             self.model_path = self.get_model_path(args)
         elif self.use_huggingface:
@@ -65,6 +68,8 @@ class ASR(ScoringFunction):
             self.batch_size = args.batch_size
             self.num_workers = args.num_workers
             self.scoring_sorting = args.scoring_sorting
+
+            self.hf_username, self.hf_modelname = self.model_url.split('/')
 
     def get_model_path(self, args):
         if args.asr_model == '':
@@ -138,21 +143,40 @@ class ASR(ScoringFunction):
         dataset = AudioDataset(df)
         dataloader = DataLoader(dataset, batch_size=self.batch_size, collate_fn=dataset.collater, num_workers=self.num_workers, pin_memory=True)
 
-        print(f"Downloading tokenizer: {self.tokenizer_url}")
-        tokenizer = Wav2Vec2CTCTokenizer.from_pretrained(self.tokenizer_url)
+        if self.hf_username == 'facebook':
+            print(f"Downloading tokenizer: {self.tokenizer_url}")
+            tokenizer = Wav2Vec2CTCTokenizer.from_pretrained(self.tokenizer_url)
 
-        print(f"Downloading model: {self.model_url}")
-        model = Wav2Vec2ForCTC.from_pretrained(self.model_url)
+            print(f"Downloading model: {self.model_url}")
+            model = Wav2Vec2ForCTC.from_pretrained(self.model_url)
+        elif self.hf_username == 'speechbrain':
+            if torch.cuda.is_available():
+                run_opts = {"device": "cuda"}
+            else:
+                run_opts = {"device": "cpu"}
+            print(f"Downloading model: {self.model_url}")
+            model = EncoderDecoderASR.from_hparams(source=self.model_url, 
+                                                   run_opts=run_opts,
+                                                   savedir=os.path.join('pretrained_models', self.hf_modelname))
+        else:
+            raise NotImplementedError
+
         model.eval()
 
         print("Scoring dataset...")
         df['wer'] = np.nan
-        for batch in tqdm(dataloader):
-            indexes, waveforms, transcripts = batch
 
-            output_logits = model(waveforms.squeeze()).logits
-            predicted_ids = torch.argmax(output_logits, dim=-1)
-            pred_transcripts = tokenizer.batch_decode(predicted_ids)
+        for batch in tqdm(dataloader):
+            indexes, waveforms, transcripts, wav_lens = batch
+
+            if self.hf_username == 'facebook':
+                output_logits = model(waveforms.squeeze()).logits
+                predicted_ids = torch.argmax(output_logits, dim=-1)
+                pred_transcripts = tokenizer.batch_decode(predicted_ids)
+            elif self.hf_username == 'speechbrain':
+                waveforms = waveforms.squeeze()
+                #waveforms = model.audio_normalizer(waveforms, self.sampling_rate)
+                pred_transcripts = model.transcribe_batch(waveforms, wav_lens)[0]
 
             for index, ref in enumerate(transcripts):
                 sample_id = indexes[index]
@@ -160,7 +184,6 @@ class ASR(ScoringFunction):
                 pred = pred_transcripts[index]
                 measures = jiwer.compute_measures(ref, pred)
                 wer = measures['wer']*100.0
-
                 assert (ref == df.loc[int(sample_id), 'tgt_text']), "The reference text indicated by the sample ID in the transcripts file does not match with the one stored in the dataset!"
                 df.at[int(sample_id), 'wer'] = wer
 

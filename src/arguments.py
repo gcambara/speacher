@@ -32,4 +32,5 @@ def parse_arguments():
     parser.set_defaults(save_curriculum_yaml=False)
     parser.add_argument('--batch_size', type=int, default=8, help='batch size')
     parser.add_argument('--num_workers', type=int, default=8, help='number of workers for dataloading')
+    parser.add_argument('--sampling_rate', type=int, default=16000, help='sampling rate to work with')
     return parser.parse_args()
