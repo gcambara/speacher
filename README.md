@@ -24,10 +24,12 @@ Inference can be speed up by sorting by length in order to reduce padding, using
 python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_output_manifest> --sort_manifest --scoring_function asr --asr_metric wer --asr_download_model facebook/wav2vec2-base-960h --huggingface --batch_size 4 --scoring_sorting ascending
 ```
 
-Currently, models coming from two HuggingFace's users are supported: facebook and speechbrain. Find here an example of using a speechbrain model:
+Currently, models coming from two HuggingFace's users are supported: facebook and [speechbrain](https://github.com/speechbrain/speechbrain). Find here an example of using a speechbrain model:
 ```
 python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_output_manifest> --sort_manifest --scoring_function asr --asr_metric wer --asr_download_model speechbrain/asr-wav2vec2-commonvoice-en --huggingface --batch_size 4 --scoring_sorting ascending
 ```
+
+Other SpeechBrain models can be found in the HuggingFace [repo](https://huggingface.co/models?pipeline_tag=automatic-speech-recognition&sort=downloads&search=speechbrain).
 
 ### Using fairseq
 Use --fairseq option, to select fairseq toolkit. With it, you will need to set the path to a pretrained model, and also a data manifest TSV with the paths to every audio sample. The fairseq framework will be called to assess such samples:
