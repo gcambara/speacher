@@ -16,12 +16,12 @@ A dataset can be scored and sorted in order of difficulty with different metrics
 ### Using HuggingFace
 If you want to use an ASR model from HuggingFace repository, specify the --huggingface argument. Also, introduce the name of the model so it can be downloaded from the model zoo:
 ```
-python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_output_manifest> --sort_manifest --scoring_function asr --asr_metric wer --asr_download_model facebook/wav2vec2-base-960h --huggingface
+python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_output_manifest> --sort_manifest --scoring_function asr --asr_metric wer --asr_download_model facebook/wav2vec2-base-960h --huggingface --batch_size 4
 ```
 
 Inference can be speed up by sorting by length in order to reduce padding, using "n_frames" column in the manifest TSV. Use --scoring_sorting function:
 ```
-python score_dataset.py --manifest /home/b.gcr/datasets/eng/librispeech/fairseq/test-clean_wav.tsv --out_dir manifests_hf --sort_manifest --scoring_function asr --asr_metric wer --asr_download_model facebook/wav2vec2-base-960h --huggingface --scoring_sorting ascending
+python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_output_manifest> --sort_manifest --scoring_function asr --asr_metric wer --asr_download_model facebook/wav2vec2-base-960h --huggingface --batch_size 4 --scoring_sorting ascending
 ```
 
 ### Using fairseq
