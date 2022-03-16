@@ -21,15 +21,13 @@ def main():
     df_list = pacing_function(df)
 
     # Create the directory for output smaller datasets storage.
-    if not os.path.isdir(args.out_dir):
-        os.mkdir(args.out_dir)
+    os.makedirs(args.out_dir, exist_ok=True)
 
     df_paths_list = []
     for index, sub_df in enumerate(df_list):
         path = os.path.join(args.out_dir, f'train_{index}.tsv')
         sub_df.to_csv(path, sep='\t', index=None)
         df_paths_list.append(path)
-
     if args.fairseq:
         train_fairseq(args, df_paths_list)
 
@@ -48,7 +46,7 @@ def train_fairseq(args, df_paths_list):
             step_yaml['train-subset'] = step_yamls[index - 1]['train-subset'] + ',' + os.path.basename(args.out_dir) + '/' + os.path.splitext(os.path.basename(df_path))[0]
         else:
             step_yaml['train-subset'] = os.path.basename(args.out_dir) + '/' + os.path.splitext(os.path.basename(df_path))[0]
-        
+
         if index != len(df_paths_list) - 1:
             step_yaml['max-update'] = (index + 1) * args.step_length
 

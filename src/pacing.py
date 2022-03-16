@@ -1,4 +1,6 @@
 """Pacing functions for speech recognition curriculum learning."""
+import numpy as np
+import pandas as pd
 
 class PacingFunction():
     """Base class for pacing functions"""
@@ -46,4 +48,45 @@ class FixedExponentialPacing(PacingFunction):
 
             df_list.append(df[start_offset:end_offset])
 
+        return df_list
+
+@PacingFunction.register_function('binning')
+class Binning(PacingFunction):
+    def __init__(self, args):
+        super(Binning, self).__init__()
+        self.bin_variable = args.bin_variable
+        self.bin_method = args.bin_method
+        self.n_bins = args.n_bins
+        self.bin_validation_metric = args.bin_validation_metric
+
+    def __call__(self, df):
+        df = df.sort_values(by=[self.bin_variable])
+
+        print("--------------------------")
+        print(f"Binning with {self.bin_variable} variable...")
+        labels = np.arange(self.n_bins)
+        if self.bin_method == 'cut':
+            bins = pd.cut(df[self.bin_variable], bins=self.n_bins, labels=labels)
+        elif self.bin_method == 'qcut':
+            bins = pd.qcut(df[self.bin_variable], q=self.n_bins, labels=labels)
+        df['bin_label'] = bins
+
+        df_list = []
+        total_n_samples = 0
+        for bin_label, bin_df in df.groupby('bin_label'):
+            total_n_samples += len(bin_df)
+            df_list.append(bin_df)
+
+            print("--------------------------")
+            print(f"Bin label = {bin_label}")
+            print(f"Bin samples = {len(bin_df)} samples")
+
+            if self.bin_validation_metric != '':
+                mean_metric = bin_df[self.bin_validation_metric].mean()
+                std_metric = bin_df[self.bin_validation_metric].std()
+                sem_metric = std_metric / np.sqrt(len(bin_df))
+                print(f"Bin mean {self.bin_validation_metric} = {mean_metric} (+/-) {sem_metric}")
+        print("--------------------------")
+
+        assert total_n_samples == len(df), f"Error! The total number of samples in the split bins is {total_n_samples}, but the total number of samples in the whole manifest is {len(df)}."
         return df_list

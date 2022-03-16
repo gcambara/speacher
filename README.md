@@ -51,7 +51,21 @@ python score_dataset.py --manifest <path_to_data_manifest> --out_dir <path_to_ou
 
 ## Training with a curriculum
 
+### Fixed exponential pacing function
 Once you have a manifest sorted by scored order of difficulty, you can run a fairseq training with curriculum learning, using the following command:
 ```
-python train_curriculum.py --manifest <path_to_sorted_manifest> --out_dir <path_to_saved_checkpoints> --starting_percent 0.04 --fairseq --fairseq_yaml <path_to_base_config_yaml> --save_curriculum_yaml
+python train_curriculum.py --manifest <path_to_sorted_manifest> --out_dir <path_to_saved_checkpoints> --starting_percent 0.04 --fairseq --fairseq_yaml <path_to_base_config_yaml> --save_curriculum_yaml --pacing_function fixed_exponential
 ```
+
+### Binning pacing function
+Instead of scoring individual samples with a single score, you can directly create a distribution of bins with the score to be used:
+```
+python train_curriculum.py --manifest <path_to_sorted_manifest> --out_dir <path_to_saved_checkpoints> --fairseq --fairseq_yaml <path_to_base_config_yaml> --save_curriculum_yaml --pacing_function binning --bin_variable mean_delta_f0 --n_bins 4 --bin_method qcut
+```
+
+Some information about the bins will be printed on screen, like number of samples per bin, for instance. If you want to validate your bins against some metric like WER, for instance, in order to see if there is significance, you can specify it like this:
+```
+python train_curriculum.py --manifest <path_to_sorted_manifest> --out_dir <path_to_saved_checkpoints> --fairseq --fairseq_yaml <path_to_base_config_yaml> --save_curriculum_yaml --pacing_function binning --bin_variable mean_delta_f0 --n_bins 4 --bin_method qcut --bin_validation_metric wer
+```
+
+Where ```--bin_validation_metric``` is the name of the validation metric in the manifest column. The mean and the standard deviation of the mean will be displayed. This is useful to check if the binning is significant or not with a quality metric like WER.
