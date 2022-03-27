@@ -55,15 +55,13 @@ class Binning(PacingFunction):
     def __init__(self, args):
         super(Binning, self).__init__()
         self.bin_variable = args.bin_variable
+        self.descending = args.descending  
         self.bin_method = args.bin_method
         self.n_bins = args.n_bins
         self.bin_validation_metric = args.bin_validation_metric
 
+    #def __call__(self, df, descending=False):
     def __call__(self, df):
-        df = df.sort_values(by=[self.bin_variable])
-
-        print("--------------------------")
-        print(f"Binning with {self.bin_variable} variable...")
         labels = np.arange(self.n_bins)
         if self.bin_method == 'cut':
             bins = pd.cut(df[self.bin_variable], bins=self.n_bins, labels=labels)
@@ -89,4 +87,8 @@ class Binning(PacingFunction):
         print("--------------------------")
 
         assert total_n_samples == len(df), f"Error! The total number of samples in the split bins is {total_n_samples}, but the total number of samples in the whole manifest is {len(df)}."
+        
+        if self.descending == True: 
+            df_list.reverse()
+            
         return df_list
