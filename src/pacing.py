@@ -1,6 +1,7 @@
 """Pacing functions for speech recognition curriculum learning."""
 import numpy as np
 import pandas as pd
+import random
 
 class PacingFunction():
     """Base class for pacing functions"""
@@ -55,20 +56,29 @@ class Binning(PacingFunction):
     def __init__(self, args):
         super(Binning, self).__init__()
         self.bin_variable = args.bin_variable
+        self.descending = args.descending  
         self.bin_method = args.bin_method
         self.n_bins = args.n_bins
         self.bin_validation_metric = args.bin_validation_metric
 
     def __call__(self, df):
-        df = df.sort_values(by=[self.bin_variable])
-
-        print("--------------------------")
-        print(f"Binning with {self.bin_variable} variable...")
         labels = np.arange(self.n_bins)
+        df_len = len(df.index)
         if self.bin_method == 'cut':
             bins = pd.cut(df[self.bin_variable], bins=self.n_bins, labels=labels)
         elif self.bin_method == 'qcut':
             bins = pd.qcut(df[self.bin_variable], q=self.n_bins, labels=labels)
+        elif self.bin_method == 'random':
+            df_len = len(df.index)
+            floor_division = df_len // self.n_bins
+            modulus = df_len % self.n_bins
+            bins = []
+            for label in labels:
+               bins += [label] * floor_division            
+            for i in range(modulus):
+                bins += [labels[i]]
+            random.shuffle(bins)
+
         df['bin_label'] = bins
 
         df_list = []
@@ -89,4 +99,8 @@ class Binning(PacingFunction):
         print("--------------------------")
 
         assert total_n_samples == len(df), f"Error! The total number of samples in the split bins is {total_n_samples}, but the total number of samples in the whole manifest is {len(df)}."
+        
+        if self.descending == True: 
+            df_list.reverse()
+            
         return df_list

@@ -23,6 +23,8 @@ def parse_arguments():
     parser.add_argument('--starting_percent', type=float, default=0.3, help='percentage of the total training data to start with at first step')
     ## Binning pacing function arguments
     parser.add_argument('--bin_variable', default='', help='name of the variable in the manifest to create bins from')
+    parser.add_argument('--descending', dest='descending', action='store_true', help='Sort bin variable in descending order') 
+    parser.set_defaults(descending=False)
     parser.add_argument('--bin_method', default='qcut', help='method for binning: cut | qcut')
     parser.add_argument('--n_bins', type=int, default=3, help='number of bins to create')
     parser.add_argument('--bin_validation_metric', default='', help='check the mean and significance of a metric for every bin, like wer (leave empty if you do not want to do this)')
