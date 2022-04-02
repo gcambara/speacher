@@ -1,6 +1,7 @@
 """Pacing functions for speech recognition curriculum learning."""
 import numpy as np
 import pandas as pd
+import random
 
 class PacingFunction():
     """Base class for pacing functions"""
@@ -60,13 +61,24 @@ class Binning(PacingFunction):
         self.n_bins = args.n_bins
         self.bin_validation_metric = args.bin_validation_metric
 
-    #def __call__(self, df, descending=False):
     def __call__(self, df):
         labels = np.arange(self.n_bins)
+        df_len = len(df.index)
         if self.bin_method == 'cut':
             bins = pd.cut(df[self.bin_variable], bins=self.n_bins, labels=labels)
         elif self.bin_method == 'qcut':
             bins = pd.qcut(df[self.bin_variable], q=self.n_bins, labels=labels)
+        elif self.bin_method == 'random':
+            df_len = len(df.index)
+            floor_division = df_len // self.n_bins
+            modulus = df_len % self.n_bins
+            bins = []
+            for label in labels:
+               bins += [label] * floor_division            
+            for i in range(modulus):
+                bins += [labels[i]]
+            random.shuffle(bins)
+
         df['bin_label'] = bins
 
         df_list = []
